@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solicitar Taxi — CoopTaxi</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 0 40px;
+    }
+
+    header {
+      width: 100%;
+      background: #1E3A5F;
+      color: white;
+      padding: 20px 24px 28px;
+      text-align: center;
+    }
+    header .icon { font-size: 40px; }
+    header h1   { font-size: 22px; font-weight: 700; margin-top: 6px; }
+    header p    { font-size: 13px; opacity: 0.75; margin-top: 4px; }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      margin-top: -14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .section-label {
+      font-size: 11px; font-weight: 600; color: #888;
+      letter-spacing: 0.8px; text-transform: uppercase;
+      margin: 20px 0 10px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    .field { margin-bottom: 14px; }
+
+    label {
+      display: block; font-size: 13px; color: #555;
+      margin-bottom: 5px; font-weight: 500;
+    }
+
+    input, textarea {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid #DDE1E7; border-radius: 12px;
+      font-size: 15px; color: #1a1a1a; background: #fff;
+      outline: none; transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: #1E3A5F; }
+    textarea { resize: none; height: 72px; }
+
+    /* Botón de mapa */
+    .map-pick-btn {
+      width: 100%; padding: 13px 14px;
+      border: 1.5px dashed #1E3A5F; border-radius: 12px;
+      background: #f0f4f8; color: #1E3A5F;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; text-align: left;
+      display: flex; align-items: center; gap: 10px;
+      transition: background 0.2s;
+    }
+    .map-pick-btn:active { opacity: 0.75; }
+    .map-pick-btn.selected {
+      background: #e8f0fb; border-style: solid; border-color: #1E3A5F;
+    }
+    .map-pick-btn .pin-icon { font-size: 20px; flex-shrink: 0; }
+    .map-pick-btn .btn-text { flex: 1; }
+    .map-pick-btn .btn-sub  { font-size: 11px; color: #888; font-weight: 400; margin-top: 2px; }
+
+    /* Zone badge */
+    .zone-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #e8f0fb; color: #1E3A5F;
+      border-radius: 20px; padding: 4px 12px;
+      font-size: 13px; font-weight: 600; margin-top: 8px;
+    }
+
+    /* Modal del mapa */
+    .map-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 1000;
+      flex-direction: column;
+    }
+    .map-modal.open { display: flex; }
+
+    .map-header {
+      background: #1E3A5F; color: white;
+      padding: 16px 20px; display: flex;
+      align-items: center; gap: 12px;
+    }
+    .map-header h3 { flex: 1; font-size: 16px; }
+    .map-close {
+      background: none; border: none; color: white;
+      font-size: 24px; cursor: pointer; line-height: 1;
+    }
+
+    #map { flex: 1; }
+
+    .map-address-bar {
+      background: white; padding: 12px 16px;
+      border-top: 1px solid #eee;
+    }
+    .map-address-bar p {
+      font-size: 13px; color: #555; margin-bottom: 4px;
+    }
+    .map-address-bar strong {
+      font-size: 14px; color: #1a1a1a; display: block;
+      min-height: 20px;
+    }
+
+    .map-confirm-btn {
+      width: 100%; padding: 14px;
+      background: #FFB800; color: #1a1a1a;
+      border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 10px;
+    }
+    .map-confirm-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* Pin central fijo */
+    .map-pin-center {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -100%);
+      font-size: 36px; z-index: 500;
+      pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+
+    /* Botones principales */
+    .submit-btn {
+      width: 100%; padding: 16px;
+      background: #FFB800; color: #1a1a1a;
+      border: none; border-radius: 14px;
+      font-size: 17px; font-weight: 700;
+      cursor: pointer; margin-top: 10px;
+    }
+    .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    #loading, #success, #error-msg { display: none; }
+
+    #loading { text-align: center; padding: 20px 0 10px; color: #555; font-size: 14px; }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #eee; border-top-color: #1E3A5F;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #success { text-align: center; padding: 30px 20px; }
+    #success .check { font-size: 64px; }
+    #success h2 { color: #1E3A5F; margin: 12px 0 8px; font-size: 20px; }
+    #success p  { color: #666; font-size: 14px; line-height: 1.5; }
+
+    #error-msg {
+      background: #fdecea; border: 1px solid #f5c6cb;
+      border-radius: 10px; padding: 12px 14px;
+      color: #c0392b; font-size: 13px; margin-top: 10px;
+    }
+
+    .required { color: #e74c3c; }
+    footer { margin-top: 24px; font-size: 12px; color: #aaa; text-align: center; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="icon">🚕</div>
+  <h1>Solicitar Taxi</h1>
+  <p>Completa el formulario y te asignamos una unidad</p>
+</header>
+
+<div class="card">
+  <form id="ride-form">
+
+    <div class="section-label">Tus datos</div>
+
+    <div class="field">
+      <label>Nombre <span class="required">*</span></label>
+      <input type="text" id="clientName" placeholder="Ej: María García"
+             autocomplete="name" />
+    </div>
+
+    <div class="field">
+      <label>Teléfono <span class="required">*</span></label>
+      <input type="tel" id="clientPhone" placeholder="Ej: 0991234567"
+             autocomplete="tel" />
+    </div>
+
+    <div class="section-label">Tu viaje</div>
+
+    <!-- Recogida -->
+    <div class="field">
+      <label>Punto de recogida <span class="required">*</span></label>
+      <button type="button" class="map-pick-btn" id="origin-btn"
+              onclick="openMap('origin')">
+        <span class="pin-icon">📍</span>
+        <div class="btn-text">
+          <div id="origin-label">Toca para seleccionar en el mapa</div>
+          <div class="btn-sub" id="origin-sub">Mueve el mapa hasta tu ubicación</div>
+        </div>
+      </button>
+      <div id="origin-zone-badge" style="display:none">
+        <span class="zone-badge">🗺️ <span id="origin-zone-text"></span></span>
+      </div>
+    </div>
+
+    <!-- Destino -->
+    <div class="field">
+      <label>Destino <span class="required">*</span></label>
+      <button type="button" class="map-pick-btn" id="dest-btn"
+              onclick="openMap('destination')">
+        <span class="pin-icon">🏁</span>
+        <div class="btn-text">
+          <div id="dest-label">Toca para seleccionar en el mapa</div>
+          <div class="btn-sub" id="dest-sub">Mueve el mapa hasta tu destino</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="field">
+      <label>Notas adicionales</label>
+      <textarea id="notes"
+        placeholder="Ej: Tengo maletas, necesito factura, edificio azul..."></textarea>
+    </div>
+
+    <div id="error-msg"></div>
+
+    <button type="submit" class="submit-btn" id="submit-btn">
+      Solicitar taxi 🚕
+    </button>
+
+  </form>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    Enviando tu solicitud...
+  </div>
+
+  <div id="success">
+    <div class="check">✅</div>
+    <h2>¡Solicitud enviada!</h2>
+    <p>Tu solicitud fue recibida.<br>
+       En breve un despachador te asignará una unidad.<br><br>
+       <strong>Mantente disponible en tu teléfono.</strong></p>
+  </div>
+</div>
+
+<footer>CoopTaxi Guayaquil</footer>
+
+<!-- Modal del mapa -->
+<div class="map-modal" id="map-modal">
+  <div class="map-header">
+    <h3 id="map-modal-title">Selecciona el punto</h3>
+    <button class="map-close" onclick="closeMap()">✕</button>
+  </div>
+  <div style="position:relative; flex:1; display:flex; flex-direction:column;">
+    <div id="map"></div>
+    <div class="map-pin-center">📍</div>
+  </div>
+  <div class="map-address-bar">
+    <p>Dirección seleccionada:</p>
+    <strong id="map-address-display">Mueve el mapa para seleccionar</strong>
+    <button class="map-confirm-btn" id="map-confirm-btn"
+            onclick="confirmLocation()" disabled>
+      Confirmar ubicación ✓
+    </button>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDbCMxm-qQMZ7WOGl9t5Fw8sPlZTvqaQ8A",
+    authDomain: "app-taxi-25305.firebaseapp.com",
+    projectId: "app-taxi-25305",
+    storageBucket: "app-taxi-25305.firebasestorage.app",
+    messagingSenderId: "434928723163",
+    appId: "1:434928723163:android:6c3db1c6b58056cb3a98fe"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ── Zonas Guayaquil ──────────────────────────────────────────
+  const ZONES = [
+    { name: "Centro",         lat: -2.1900, lng: -79.8892, km: 2.5 },
+    { name: "Norte",          lat: -2.1400, lng: -79.9000, km: 4.0 },
+    { name: "Urdesa / Oeste", lat: -2.1650, lng: -79.9100, km: 2.5 },
+    { name: "Sur",            lat: -2.2400, lng: -79.8800, km: 4.0 },
+    { name: "Aeropuerto",     lat: -2.1574, lng: -79.8836, km: 2.0 },
+    { name: "Samborondón",    lat: -2.1400, lng: -79.8600, km: 4.0 },
+    { name: "Vía a la Costa", lat: -2.1800, lng: -80.0500, km: 8.0 },
+    { name: "Durán",          lat: -2.1700, lng: -79.8300, km: 4.0 },
+    { name: "Noroeste",       lat: -2.1000, lng: -79.9300, km: 5.0 },
+  ];
+
+  function detectZone(lat, lng) {
+    let best = null, min = Infinity;
+    const R = 6371, r = Math.PI / 180;
+    for (const z of ZONES) {
+      const dLat = (z.lat - lat) * r, dLng = (z.lng - lng) * r;
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(lat*r)*Math.cos(z.lat*r)*Math.sin(dLng/2)**2;
+      const d = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      if (d <= z.km && d < min) { best = z; min = d; }
+    }
+    return best?.name ?? null;
+  }
+
+  // ── Estado del mapa ──────────────────────────────────────────
+  let map = null;
+  let currentTarget = null;  // 'origin' | 'destination'
+  let geocodeTimer  = null;
+  let pendingAddress = null;
+  let pendingLat = null, pendingLng = null;
+
+  // Datos guardados
+  const saved = { origin: null, destination: null };
+
+  // ── Inicializar mapa ─────────────────────────────────────────
+  function initMap() {
+    if (map) return;
+    map = L.map('map', { zoomControl: true }).setView([-2.1900, -79.8892], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Cada vez que el mapa se mueve, geocodifica el centro
+    map.on('moveend', onMapMove);
+  }
+
+  function onMapMove() {
+    const center = map.getCenter();
+    pendingLat = center.lat;
+    pendingLng = center.lng;
+    pendingAddress = null;
+
+    document.getElementById('map-address-display').textContent = 'Buscando dirección...';
+    document.getElementById('map-confirm-btn').disabled = true;
+
+    clearTimeout(geocodeTimer);
+    geocodeTimer = setTimeout(() => reverseGeocode(center.lat, center.lng), 600);
+  }
+
+  async function reverseGeocode(lat, lng) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`;
+      const res  = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+      const data = await res.json();
+
+      const addr = data.address;
+      const parts = [
+        addr.road || addr.pedestrian || addr.footway,
+        addr.house_number,
+        addr.suburb || addr.neighbourhood || addr.city_district,
+      ].filter(Boolean);
+
+      pendingAddress = parts.length > 0
+        ? parts.join(', ')
+        : data.display_name?.split(',').slice(0,3).join(',') ?? 'Dirección no disponible';
+
+      document.getElementById('map-address-display').textContent = pendingAddress;
+      document.getElementById('map-confirm-btn').disabled = false;
+    } catch {
+      document.getElementById('map-address-display').textContent =
+        'No se pudo obtener la dirección';
+      document.getElementById('map-confirm-btn').disabled = false;
+      pendingAddress = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+  }
+
+  // ── Exponer funciones al HTML ────────────────────────────────
+  window.openMap = function(target) {
+    currentTarget = target;
+    document.getElementById('map-modal-title').textContent =
+      target === 'origin' ? '📍 Punto de recogida' : '🏁 Destino';
+    document.getElementById('map-modal').classList.add('open');
+    document.getElementById('map-address-display').textContent =
+      'Mueve el mapa para seleccionar';
+    document.getElementById('map-confirm-btn').disabled = true;
+
+    // Inicializar mapa la primera vez
+    setTimeout(() => {
+      initMap();
+      map.invalidateSize();
+
+      // Centrar en la última posición guardada o en Guayaquil
+      const prev = saved[target];
+      if (prev) {
+        map.setView([prev.lat, prev.lng], 16);
+      } else if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (p) => map.setView([p.coords.latitude, p.coords.longitude], 16),
+          () => {}
+        );
+      }
+    }, 100);
+  };
+
+  window.closeMap = function() {
+    document.getElementById('map-modal').classList.remove('open');
+  };
+
+  window.confirmLocation = function() {
+    if (!pendingLat || !pendingAddress) return;
+
+    saved[currentTarget] = {
+      lat: pendingLat, lng: pendingLng, address: pendingAddress
+    };
+
+    if (currentTarget === 'origin') {
+      const zone = detectZone(pendingLat, pendingLng);
+      saved.origin.zone = zone;
+
+      document.getElementById('origin-label').textContent = pendingAddress;
+      document.getElementById('origin-sub').textContent   =
+        zone ? `Zona: ${zone}` : 'Zona: fuera de cobertura';
+      document.getElementById('origin-btn').classList.add('selected');
+
+      if (zone) {
+        document.getElementById('origin-zone-text').textContent = zone;
+        document.getElementById('origin-zone-badge').style.display = 'block';
+      } else {
+        document.getElementById('origin-zone-badge').style.display = 'none';
+      }
+    } else {
+      const destZone = detectZone(pendingLat, pendingLng);
+      saved.destination.zone = destZone;
+
+      document.getElementById('dest-label').textContent = pendingAddress;
+      document.getElementById('dest-sub').textContent   =
+        destZone ? `Zona: ${destZone}` : 'Destino seleccionado ✓';
+      document.getElementById('dest-btn').classList.add('selected');
+    }
+
+    closeMap();
+  };
+
+  // ── Envío del formulario ─────────────────────────────────────
+  document.getElementById('ride-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name  = document.getElementById('clientName').value.trim();
+    const phone = document.getElementById('clientPhone').value.trim();
+    const notes = document.getElementById('notes').value.trim();
+    const errDiv = document.getElementById('error-msg');
+    errDiv.style.display = 'none';
+
+    if (!name)               return showError('Ingresa tu nombre.');
+    if (!phone)              return showError('Ingresa tu teléfono.');
+    if (!saved.origin)       return showError('Selecciona el punto de recogida en el mapa.');
+    if (!saved.destination)  return showError('Selecciona el destino en el mapa.');
+
+    document.getElementById('ride-form').style.display  = 'none';
+    document.getElementById('loading').style.display    = 'block';
+
+    try {
+      await addDoc(collection(db, 'rides'), {
+        clientName:  name,
+        clientPhone: phone,
+        origin:      saved.origin.address,
+        originZone:  saved.origin.zone ?? 'Fuera de zona',
+        originLat:   saved.origin.lat,
+        originLng:   saved.origin.lng,
+        destination: saved.destination.address,
+        destZone:    saved.destination.zone ?? null,
+        destLat:     saved.destination.lat,
+        destLng:     saved.destination.lng,
+        notes:       notes || null,
+        status:      'pending',
+        source:      'web_form',
+        createdAt:   serverTimestamp(),
+      });
+
+      document.getElementById('loading').style.display  = 'none';
+      document.getElementById('success').style.display  = 'block';
+    } catch (err) {
+      document.getElementById('loading').style.display  = 'none';
+      document.getElementById('ride-form').style.display = 'block';
+      showError('Error al enviar. Intenta de nuevo.');
+      console.error(err);
+    }
+  });
+
+  function showError(msg) {
+    const d = document.getElementById('error-msg');
+    d.textContent    = msg;
+    d.style.display  = 'block';
+  }
+</script>
+
+</body>
+</html>

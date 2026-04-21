@@ -105,6 +105,13 @@ class DriverService {
     }
   }
 
+  Future<void> setDriverActive(String uid, bool active) async {
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .update({'isActive': active});
+  }
+
   Future<bool> requestLocationPermission() async {
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {

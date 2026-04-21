@@ -15,6 +15,7 @@ class AppUser {
   final DriverStatus status;
   final String? currentZone;
   final DateTime? lastZoneUpdate;
+  final bool isActive;
 
   const AppUser({
     required this.uid,
@@ -27,6 +28,7 @@ class AppUser {
     this.status = DriverStatus.offline,
     this.currentZone,
     this.lastZoneUpdate,
+    this.isActive = true,
   });
 
   bool get isAdmin => role == UserRole.admin;
@@ -46,6 +48,7 @@ class AppUser {
       status: _parseStatus(data['status']),
       currentZone: data['currentZone'],
       lastZoneUpdate: (data['lastZoneUpdate'] as Timestamp?)?.toDate(),
+      isActive: data['isActive'] ?? true,
     );
   }
 
@@ -60,6 +63,7 @@ class AppUser {
         'currentZone': currentZone,
         'lastZoneUpdate':
             lastZoneUpdate != null ? Timestamp.fromDate(lastZoneUpdate!) : null,
+        'isActive': isActive,
       };
 
   AppUser copyWith({
@@ -70,6 +74,7 @@ class AppUser {
     DriverStatus? status,
     String? currentZone,
     DateTime? lastZoneUpdate,
+    bool? isActive,
   }) =>
       AppUser(
         uid: uid,
@@ -82,6 +87,7 @@ class AppUser {
         status: status ?? this.status,
         currentZone: currentZone ?? this.currentZone,
         lastZoneUpdate: lastZoneUpdate ?? this.lastZoneUpdate,
+        isActive: isActive ?? this.isActive,
       );
 
   static DriverStatus _parseStatus(String? value) {

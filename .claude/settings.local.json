@@ -6,7 +6,20 @@
       "Bash(flutter analyze *)",
       "Bash(flutter devices *)",
       "Bash(firebase --version)",
-      "Bash(dart pub *)"
+      "Bash(dart pub *)",
+      "Bash(flutter run *)",
+      "Bash(flutter build *)",
+      "Bash(./gradlew assembleDebug --no-daemon)",
+      "Bash(java -version)",
+      "Bash(flutter doctor *)",
+      "Bash(flutter config *)",
+      "Bash(./gradlew --stop)",
+      "Bash(taskkill /F /IM java.exe)",
+      "PowerShell(Stop-Process -Name \"java\" -Force -ErrorAction SilentlyContinue)",
+      "Bash(\"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\\\\bin\\\\java.exe\" -version)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\"; Set-Location \"C:\\\\Users\\\\servicioalcliente\\\\Documents\\\\taxi-app\\\\android\"; .\\\\gradlew.bat assembleDebug 2>&1 | Select-Object -Last 30)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\"; Set-Location \"C:\\\\Users\\\\servicioalcliente\\\\Documents\\\\taxi-app\\\\android\"; .\\\\gradlew.bat assembleDebug --debug 2>&1 | Select-String \"loopback|IOException|connection|Unable\" | Select-Object -First 20)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\"; $env:JAVA_TOOL_OPTIONS = \"-Djava.net.preferIPv4Stack=true\"; Set-Location \"C:\\\\Users\\\\servicioalcliente\\\\Documents\\\\taxi-app\"; flutter build apk --debug 2>&1 | Select-Object -Last 15)"
     ]
   }
 }

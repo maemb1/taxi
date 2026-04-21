@@ -35,6 +35,11 @@ class AdminDashboardScreen extends ConsumerWidget {
             tooltip: 'Historial',
           ),
           IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.push('/admin/settings'),
+            tooltip: 'Configuración',
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => ref.read(authServiceProvider).signOut(),
           ),

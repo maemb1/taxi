@@ -136,6 +136,19 @@ class RideService {
           return rides;
         });
   }
+
+  Stream<List<Ride>> watchRidesByDriver(String driverId) {
+    return _rides
+        .where('driverId', isEqualTo: driverId)
+        .where('status', whereIn: ['completed', 'cancelled'])
+        .limit(50)
+        .snapshots()
+        .map((snap) {
+          final rides = snap.docs.map(Ride.fromFirestore).toList();
+          rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return rides;
+        });
+  }
 }
 
 final rideServiceProvider = Provider<RideService>((ref) {
@@ -159,4 +172,11 @@ final rideHistoryProvider = StreamProvider<List<Ride>>((ref) {
   final user = ref.watch(currentUserProvider);
   if (user == null) return const Stream.empty();
   return ref.watch(rideServiceProvider).watchHistory();
+});
+
+final driverHistoryProvider =
+    StreamProvider.family<List<Ride>, String>((ref, driverId) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return const Stream.empty();
+  return ref.watch(rideServiceProvider).watchRidesByDriver(driverId);
 });

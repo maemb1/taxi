@@ -4,12 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:taxi_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:taxi_app/features/auth/data/auth_provider.dart';
 import 'package:taxi_app/features/drivers/presentation/screens/driver_home_screen.dart';
+import 'package:taxi_app/features/drivers/presentation/screens/driver_history_screen.dart';
 import 'package:taxi_app/features/rides/presentation/screens/admin_dashboard_screen.dart';
 import 'package:taxi_app/features/rides/presentation/screens/new_ride_screen.dart';
 import 'package:taxi_app/features/rides/presentation/screens/assign_driver_screen.dart';
 import 'package:taxi_app/features/history/presentation/history_screen.dart';
 import 'package:taxi_app/features/drivers/presentation/screens/driver_profile_screen.dart';
 import 'package:taxi_app/features/drivers/presentation/screens/admin_drivers_screen.dart';
+import 'package:taxi_app/features/settings/presentation/screens/settings_screen.dart';
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
 
@@ -50,6 +53,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'drivers',
             builder: (context, state) => const AdminDriversScreen(),
+          ),
+          GoRoute(
+            path: 'driver-history/:driverId',
+            builder: (context, state) => DriverHistoryScreen(
+              driverId: state.pathParameters['driverId']!,
+              driverName: state.extra as String? ?? 'Conductor',
+            ),
+          ),
+          GoRoute(
+            path: 'settings',
+            builder: (context, state) => const SettingsScreen(),
           ),
         ],
       ),
